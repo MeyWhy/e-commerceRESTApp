@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-db-init
+  namespace: ecommerce-infra
+data:
+  user-init.sql: |
+    CREATE TABLE IF NOT EXISTS users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255),
+      username VARCHAR(255) UNIQUE NOT NULL,
+      password VARCHAR(255) NOT NULL,
+      email VARCHAR(255),
+      address VARCHAR(255),
+      role ENUM('admin', 'customer') NOT NULL
+    );
+
+    INSERT INTO users (name, username, password, email, address, role) VALUES
+    ('admin','admin', '$2a$12$vEPEjhfum4u4D11YnENTGOe.sybTTGwzUDr4uBxfVkp0Uv3XLB2S6','admin@admin.com', '342 Street', 'admin'),
+    ('testname', 'testuser', '$2a$12$dk0gXj21VXotP3siAkVjRucONFkNWB875QWlVGo/xeLMD16kqnLpO', 'user@email.com', '345 Rue', 'customer');

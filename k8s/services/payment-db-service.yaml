@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-db
+  namespace: ecommerce-infra
+spec:
+  type: ClusterIP
+  selector:
+    app: payment-db
+  ports:
+    - port: 3306
+      targetPort: 3306

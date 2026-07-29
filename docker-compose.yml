@@ -1,0 +1,312 @@
+services:
+  order-db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ORDER_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: orderdb
+      MYSQL_USER: ${ORDER_DB_USER}
+      MYSQL_PASSWORD: ${ORDER_DB_PASSWORD}
+    volumes:
+      - ./order-init.sql:/docker-entrypoint-initdb.d/order-init.sql:ro
+    ports:
+      - "33061:3306"
+    networks:
+      - elk
+ 
+  order-service:
+    image: meyyaou/order-service:1.0
+    build: ./order-service
+    depends_on:
+      - order-db
+    environment:
+      DB_HOST: order-db
+      DB_PORT: 3306
+      DB_USER: ${ORDER_DB_USER}
+      DB_PASSWORD: ${ORDER_DB_PASSWORD}
+      DB_NAME: orderdb  
+      JWT_SECRET: ${JWT_SECRET}
+      LOG_LEVEL: info
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT:  5000
+    ports:
+      - "3001:3001"
+    networks:
+      - elk
+
+  inventory-service:
+    image: meyyaou/inventory-service:1.0
+    build: ./inventory-service
+    depends_on:
+      - inventory-db
+    environment:
+      DB_HOST: inventory-db
+      DB_PORT: 3306
+      DB_USER: ${INVENTORY_DB_USER}
+      DB_PASSWORD: ${INVENTORY_DB_PASSWORD}
+      DB_NAME: inventorydb
+      JWT_SECRET: ${JWT_SECRET}
+      LOG_LEVEL: info
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT:  5000
+    ports:
+      - "3002:3002"
+    networks:
+      - elk
+
+  inventory-db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: ${INVENTORY_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: inventorydb
+      MYSQL_USER: ${INVENTORY_DB_USER}
+      MYSQL_PASSWORD: ${INVENTORY_DB_PASSWORD}
+    volumes:
+      - ./inventory-init.sql:/docker-entrypoint-initdb.d/inventory-init.sql:ro
+    ports:
+      - "33062:3306"
+    networks:
+      - elk 
+
+  payment-db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: ${PAYMENT_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: paymentdb
+      MYSQL_USER: ${PAYMENT_DB_USER}
+      MYSQL_PASSWORD: ${PAYMENT_DB_PASSWORD}
+    volumes:
+      - ./payment-init.sql:/docker-entrypoint-initdb.d/payment-init.sql:ro
+    ports:
+      - "33064:3306"
+    networks:
+      - elk 
+
+  payment-service:
+    image: meyyaou/payment-service:1.0
+    build: ./payment-service
+    depends_on:
+      - payment-db
+    environment:
+      DB_HOST: payment-db
+      DB_PORT: 3306
+      DB_USER: ${PAYMENT_DB_USER}
+      DB_PASSWORD: ${PAYMENT_DB_PASSWORD}
+      DB_NAME: paymentdb
+      JWT_SECRET: ${JWT_SECRET}
+      LOG_LEVEL: info
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT:  5000
+    ports:
+      - "3004:3004"
+    networks:
+      - elk 
+  
+  shipping-db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SHIPPING_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: shippingdb
+      MYSQL_USER: ${SHIPPING_DB_USER}
+      MYSQL_PASSWORD: ${SHIPPING_DB_PASSWORD}
+    volumes:
+      - ./shipping-init.sql:/docker-entrypoint-initdb.d/shipping-init.sql:ro
+    ports:
+      - "33065:3306"
+    networks:
+      - elk 
+
+  shipping-service:
+    image: meyyaou/shipping-service:1.0
+    build: ./shipping-service
+    depends_on:
+      - shipping-db
+    environment:
+      DB_HOST: shipping-db
+      DB_PORT: 3306
+      DB_USER: ${SHIPPING_DB_USER}
+      DB_PASSWORD: ${SHIPPING_DB_PASSWORD}
+      DB_NAME: shippingdb
+      JWT_SECRET: ${JWT_SECRET}
+      LOG_LEVEL: info
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT:  5000
+    ports:
+      - "3005:3005"
+    networks:
+      - elk
+
+  notification-service:
+    image: meyyaou/notification-service:1.0
+    build: ./notification-service
+    environment:
+      LOG_LEVEL: info
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT:  5000
+    ports:
+      - "3006:3006"
+    networks:
+      - elk
+  
+  order-worker:
+    image: meyyaou/order-service:1.0
+    command: ["node", "worker.js"]
+    depends_on:
+      - order-db
+      - order-service
+    environment:
+      DB_HOST: order-db
+      DB_PORT: 3306
+      DB_USER: ${ORDER_DB_USER}
+      DB_PASSWORD: ${ORDER_DB_PASSWORD}
+      DB_NAME: orderdb
+      JWT_SECRET: ${JWT_SECRET}
+      SERVICE_TOKEN: ${SERVICE_TOKEN}
+      LOG_LEVEL: info
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT:  5000
+    networks:
+      - elk
+
+  auth-db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: ${AUTH_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: usersdb
+      MYSQL_USER: ${AUTH_DB_USER}
+      MYSQL_PASSWORD: ${AUTH_DB_PASSWORD}
+    volumes:
+      - ./user-init.sql:/docker-entrypoint-initdb.d/user-init.sql:ro
+    ports:
+      - "33066:3306"
+    networks:
+      - elk 
+
+
+  auth-service:
+    image: meyyaou/auth-service:1.0
+    build: ./auth-service
+    container_name: auth-service
+    ports:
+      - "3007:3007"
+    environment:
+      SERVICE_NAME: auth-service
+      DB_HOST: auth-db
+      DB_USER: ${AUTH_DB_USER}
+      DB_PASSWORD: ${AUTH_DB_PASSWORD}
+      DB_NAME: usersdb
+      JWT_SECRET: ${JWT_SECRET}
+      LOG_LEVEL: info
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT:  5000
+    depends_on:
+      - auth-db
+    networks:
+      - elk
+      
+  nginx:
+    image: meyyaou/api-gateway:1.0
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - order-service
+      - auth-service
+    networks:
+      - elk
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"      # AMQP
+      - "15672:15672"    # RabbitMQ management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    networks:
+      - elk
+
+      
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - elk
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - elk
+    
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+    ports:
+      - "9200:9200"
+    networks:
+      - elk
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.12.0
+    container_name: logstash
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./pipeline:/usr/share/logstash/pipeline
+    ports:
+      - "5000:5000" # Port pour recevoir logs TCP JSON
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk
+  swagger-ui:
+    image: swaggerapi/swagger-ui
+    container_name: swagger-ui
+    ports:
+      - "8081:8080"
+    environment:
+      - SWAGGER_JSON=/spec/openapi.yaml
+    volumes:
+      - ./openapi.yaml:/spec/openapi.yaml:ro
+
+networks:
+  elk:
+    driver: bridge
+
+volumes:
+  grafana_data:
+  prometheus_data:
+  esdata:

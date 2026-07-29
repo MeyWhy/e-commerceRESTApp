@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: payment-config
+  namespace: ecommerce-services
+data:
+  DB_HOST: payment-db.ecommerce-infra
+  DB_PORT: "3306"
+  DB_NAME: paymentdb
+  LOG_LEVEL: info
+  LOGSTASH_HOST: logstash
+  LOGSTASH_PORT: "5000"

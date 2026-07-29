@@ -1,0 +1,14 @@
+CREATE DATABASE IF NOT EXISTS inventorydb;
+USE inventorydb;
+
+CREATE TABLE IF NOT EXISTS products (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  quantity INT NOT NULL DEFAULT 0,
+  price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO products (name, quantity, price) VALUES
+('PC', 100, 19.99),
+('Phone', 50, 9.50);

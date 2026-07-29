@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'ecommerce-services'
+    static_configs:
+      - targets:
+          - order-service:3001
+          - payment-service:3004
+          - inventory-service:3002
+          - auth-service:3007
+          - shipping-service:3005
+          - notification-service:3006

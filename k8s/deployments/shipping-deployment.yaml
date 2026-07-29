@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shipping-service
+  namespace: ecommerce-services
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: shipping-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: shipping-service
+    spec:
+      containers:
+      - name: shipping-service
+        image: meyyaou/shipping-service:1.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3005
+        envFrom:
+        - configMapRef:
+            name: shipping-config
+        - secretRef:
+            name: shipping-secret
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          tcpSocket:
+            port: 3005
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+        readinessProbe:
+          tcpSocket:
+            port: 3005
+          initialDelaySeconds: 20
+          periodSeconds: 5
